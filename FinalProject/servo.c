@@ -5,9 +5,13 @@
  *      Author: pknipper
  */
 #include "servo.h"
-volatile uint32_t true_0;
-volatile uint32_t true_180;
-volatile uint8_t calibrated = 0;
+
+/*--------------------------------------CALIBRATION--------------------------------------*/
+volatile uint32_t true_0 = 0x4C587;
+volatile uint32_t true_180 = 0x45E67;
+volatile uint8_t calibrated = 1; //set to 1 if calibrated values are set
+/*---------------------------------------------------------------------------------------*/
+
 
 
 void servo_init(void){
@@ -68,7 +72,8 @@ void servo_calibrate(void){
 
     while(button != 4){
         match_value = (TIMER1_TBPMR_R << 16) + TIMER1_TBMATCHR_R;
-        sprintf(info, "%X | Set 0", match_value);
+
+        sprintf(info, "<- B1 [B4 Set] B2 ->%X | Set 0", match_value);
         lcd_clear();
         lcd_puts(info);
 
@@ -90,7 +95,7 @@ void servo_calibrate(void){
     button = 0;
     while(button != 4){
         match_value = (TIMER1_TBPMR_R << 16) + TIMER1_TBMATCHR_R;
-        sprintf(info, "%X | Set 180", match_value);
+        sprintf(info, "<- B1 [B4 Set] B2 ->%X | Set 180", match_value);
         lcd_clear();
         lcd_puts(info);
 

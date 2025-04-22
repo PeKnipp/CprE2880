@@ -14,31 +14,45 @@
 #include "uart-interrupt.h"
 #include "open_interface.h"
 #include "movement.h"
-#include "adc.h"
-#include "ping.h"
+#include "adc.h" //for IR sensors
 #include "scan.h"
-
+#include <stdbool.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
+#include "button.h"
 
-struct fieldObject{
+/*
+ * Fixed errors related to code that wasnt written for CCS.
+ * I assume thats supposed to be our struct with values from the scan.
+ * Would like to know from what file the code is from and sit down with Peter to talk about their code.
+ * No clue why struct deoesnt work
+ */
+
+//imported the functions from lab 8 to lab 10 into main
+typedef struct
+{
     char firstEdge;
     char secondEdge;
     float distance;
-    float angle;
+    float objectAngle;
     char radialWidth;
     float linearWidth;
-};
+}fieldObject;
 
-#warning "Needs to be updated with our new scan.h library"
+void main(){
 
-int main(void) {
 	timer_init(); // Must be called before lcd_init(), which uses timer functions
 	lcd_init();
+	button_init();
 	uart_interrupt_init();
 	adc_init();
+	ping_init();
 	servo_init();
+
+	oi_t *sensor_data = oi_alloc();
+	oi_init (sensor_data);
+
 
     char i;
     char j = 0;  //number of legit objects starts at zero
@@ -48,11 +62,29 @@ int main(void) {
     char angleInc = 2;
 //    const int scanArraySizes = 91; //180/angleInc + 1;
     float PINGdata[91]; //initialize arrays to only have as many entrys as scans
-    short IRdata[91];
-    struct fieldObject objects[6] = {0};
+    short IRdata[91]; //changed from short
+    const int SONAR = 0;
+    const int IR = 1;
+    fieldObject objects[6] = {0};
+    scan(0,SONAR);
+    timer_waitMillis(200);
 
-//  servo_calibrate();
+    /*--------------------------------------CALIBRATION--------------------------------------*/
 
+    /*----------SERVO----------*/
+    //shows the left and right calibration values
+    //TODO for each CyBot: assign true_0 and true_180 values in servo.c
+//    servo_calibrate();
+
+    /*----------ADC----------*/
+    //TODO for each CyBot: assign coeff and power values in scan.c
+//    scan(90,SONAR);
+//    adc_calibrate();
+
+    /*---------------------------------------------------------------------------------------*/
+
+
+    uart_sendStr("\n\rReady for scan!\n\r\n\r");
 	while(command_flag != 3) //'q' character quits the program when not scanning
 	{
 
@@ -61,6 +93,8 @@ int main(void) {
 	            PINGdata[i] = 0;
 	            IRdata[i] = 0;
 	        }
+
+
 
 	        sprintf(info, "\n\rANGLE:       PING:       IR:     \n\r");
 	        uart_sendStr(info);
@@ -88,12 +122,10 @@ int main(void) {
                 }
 
                 timer_waitMillis(20); //wait for servo
-	            cyBOT_Scan(i * angleInc, &scanner_data); //scan
-	            PINGdata[i] = scanner_data.sound_dist;
-	            IRdata[i] = scanner_data.IR_raw_val;
+                PINGdata[i] = scan(i*angleInc, SONAR);
+                IRdata[i] = scan(i*angleInc, IR);
 	            sprintf(info, "%d       %f      %d      \n\r", i * angleInc, PINGdata[i], IRdata[i]);
 	            uart_sendStr(info);
-
 	        }
 
 	        j = 0;
@@ -149,15 +181,15 @@ int main(void) {
 
                 }
 
-                objects[i].angle = (objects[i].firstEdge + objects[i].secondEdge)/2.0;
-                objects[i].distance = PINGdata[(int)(objects[i].angle / angleInc)];
+                objects[i].objectAngle = (objects[i].firstEdge + objects[i].secondEdge)/2.0;
+                objects[i].distance = PINGdata[(int)(objects[i].objectAngle / angleInc)];
                 objects[i].linearWidth = 2.0*objects[i].distance*tan((objects[i].radialWidth*(M_PI/180))/2.0);
                 if (objects[i].linearWidth < objects[smallestObject].linearWidth){
                     smallestObject = i;
                 }
 	            sprintf(info, "\n\rObject_Number: %i\n\r", i+1);
                 uart_sendStr(info);
-                sprintf(info, "Object_Angle: %f\n\r", objects[i].angle);
+                sprintf(info, "Object_Angle: %f\n\r", objects[i].objectAngle);
                 uart_sendStr(info);
                 sprintf(info, "Object_Distance: %f\n\r", objects[i].distance);
                 uart_sendStr(info);
@@ -171,22 +203,22 @@ int main(void) {
 	        uart_sendStr(info);
 
 	        if(!manual){
-                if(objects[smallestObject].angle > 90){
+                if(objects[smallestObject].objectAngle > 90){
                     sprintf(info,"\n\rTurning Left\n\r");
                     uart_sendStr(info);
-                    cyBOT_Scan(0, &scanner_data);
-                    turn_left(sensor_data, (objects[smallestObject].angle - 90.0 - 5.0));   //enters inf loop at open_interface.c -> char oi_uartReceive(void) -> while ((UART4_FR_R & UART_FR_RXFE))
+                    servo_move(0);
+                    turn_left(sensor_data, (objects[smallestObject].objectAngle - 90.0 - 5.0));   //enters inf loop at open_interface.c -> char oi_uartReceive(void) -> while ((UART4_FR_R & UART_FR_RXFE))
                 }
-                else if(objects[smallestObject].angle < 90){
+                else if(objects[smallestObject].objectAngle < 90){
                     sprintf(info,"\n\rTurning Right\n\r");
                     uart_sendStr(info);
-                    cyBOT_Scan(0, &scanner_data);
-                    turn_right(sensor_data, (90.0 - objects[smallestObject].angle - 5.0));  //enters inf loop at open_interface.c -> char oi_uartReceive(void) -> while ((UART4_FR_R & UART_FR_RXFE))
+                    servo_move(0);
+                    turn_right(sensor_data, (90.0 - objects[smallestObject].objectAngle - 5.0));  //enters inf loop at open_interface.c -> char oi_uartReceive(void) -> while ((UART4_FR_R & UART_FR_RXFE))
                 }
                 else {
                     sprintf(info,"\n\rNot Turning!\n\r");
                     uart_sendStr(info);
-                    cyBOT_Scan(0, &scanner_data);
+                    servo_move(0);
                 }
 
                 sprintf(info,"Moving!\n\r");
@@ -242,5 +274,6 @@ int main(void) {
 	    }
 	}
     oi_free(sensor_data);
-    return 0;
+    return;
 }
+

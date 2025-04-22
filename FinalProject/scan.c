@@ -17,16 +17,31 @@
 /**
  * A replacement for the cyBOT_Scan function from previous labs
  */
-double getScanAt(int angle, char scanType){
-    double distance;
+
+//typedef struct
+//{
+//    int ping;
+//    float ir;
+//}scandata;
+
+volatile const int SONAR = 0;
+volatile const int IR = 1;
+
+double scan(int angle, int scanType){
+    /*--------------------------------------CALIBRATION--------------------------------------*/
+//    double num1 = 229.3995; //found using adc_calibrate
+//    double num2 = 27.9881; //found using adc_calibrate
+    /*---------------------------------------------------------------------------------------*/
+
+    double distance = 0;
     servo_move(angle); //moves the sensor to take a reading at the given angle value
     if(scanType == SONAR){ //takes a reading using the ping sensor
         distance = ping_getDistance(); //getDistance does all calculations internally to find the distance to object
     }
     else if (scanType == IR){ //takes a reading using the IR sensor
-        distance = pow((14493.0/adc_read()), 1.321); //calculations to use the ADC voltage to estimate distance
-        //TODO: formula needs to be calibrated within adc.c
-        //TODO: needs to be calculated within adc.c
+//        distance = pow((num1/adc_read()), num2); //calculations to use the ADC voltage to estimate distance
+        distance = adc_read();
+//                num1 - (num2*log(adc_read()));
     }
     return distance; //returns distance estimation from the scan
 }

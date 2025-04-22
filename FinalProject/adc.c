@@ -2,11 +2,15 @@
  * adc.c
  *
  *  Created on: Mar 25, 2025
- *      Author: pknipper
+ *      Authors: pknipper and csledo
  */
 
 
 #include "adc.h"
+#include "timer.h"
+#include "lcd.h"
+#include "stdio.h"
+#include "uart-interrupt.h"
 
 void adc_init(){
     //Start Port B
@@ -31,7 +35,7 @@ void adc_init(){
     ADC0_SSCTL3_R |= 0x0006;
     ADC0_IM_R &= 0xFFF7;
     ADC0_ACTSS_R |= 0x0008;
-    ADC0_SAC_R |= 0x04;
+    ADC0_SAC_R |= 0x04; //hardware averaging: 16x hardware oversampling
 }
 
 uint16_t adc_read(){
@@ -41,4 +45,47 @@ uint16_t adc_read(){
     result = ADC0_SSFIFO3_R & 0xFFF; // 3) read result
     ADC0_ISC_R = 0x0008; // 4) acknowledge completion
     return result;
+}
+
+void adc_calibrate(){
+    char output[50];
+    char result[50];
+    char valuesY[50];
+    char valuesX[50];
+    int distance;
+    int i = 0;
+    int yVals[10];
+    uart_sendStr("\n\rTaking ADC calibration values\n\r\n\r");
+    for(distance = 5; distance <= 50; distance = distance){
+        //take sample of analog input
+        int sample = adc_read();
+        yVals[i] = sample;
+        //delay for sample/display
+        timer_waitMillis(300);
+        //print to display
+        sprintf(output, "ADC value for %d cm: \n%d", distance, sample); //%f , estimation
+        lcd_printf(output);
+        if(command_flag == 11){
+            sprintf(result, "VVoltage value for %d cm: %d\n\r", distance, sample); //%f , estimation
+            uart_sendStr(result);
+            i++;
+            distance += 5;
+            command_flag = 0;
+        } //wait for confirmation in PUTTY
+   }
+    uart_sendStr("Finished calibration\n\r\n\r");
+    uart_sendStr("Formatted output:\n\r");
+    for (distance = 5; distance <= 50; distance += 5)
+    {
+        sprintf(valuesX, "%d ", distance);
+        uart_sendStr(valuesX);
+    }
+    uart_sendStr("\n\r");
+
+    for (i = 0; i < 10; ++i)
+    {
+        sprintf(valuesY, "%d ", yVals[i]);
+        uart_sendStr(valuesY);
+    }
+    uart_sendStr("\n\r");
 }

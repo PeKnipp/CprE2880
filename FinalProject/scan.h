@@ -23,6 +23,6 @@
 /**
  * Takes a scan at the given angle of type scanType
  */
-double getScanAt(int angle, char scanType)
+double scan(int angle, int scanType);
 
 #endif /* SCAN_H_ */

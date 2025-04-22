@@ -40,9 +40,6 @@ def main():
         scan_command_Button = tk.Button(text ="Press to Scan", command = send_scan)
         scan_command_Button.pack() # Pack the button into the window for display
 
-        scan_command_Button = tk.Button(text ="Press to Turn", command = send_turn)
-        scan_command_Button.pack() # Pack the button into the window for display
-
         window.bind("<KeyPress>", key_press)
         window.bind("<KeyRelease>", key_release)
 
@@ -72,18 +69,6 @@ def send_scan():
         global gui_send_message # Command that the GUI has requested sent to the Cybot
         
         gui_send_message = "M\n"   # Update the message for the Client to send
-
-def send_turn():
-        global gui_send_message # Command that the GUI has requested sent to the Cybot
-        global turnAmount
-        gui_send_message = "T\n"   # Update the message for the Client to send
-
-        turn_window = Toplevel(window)
-        turn_window.title("Turning Window")
-        tk.Entry(turn_window,textvariable = turnAmount)
-        tk.Button(turn_window, text="Left", command=turn_window.destroy())
-        tk.Button(turn_window, text="Right", command=turn_window.destroy())
-
 
 def key_press(event):
         global gui_send_message
@@ -170,12 +155,7 @@ def socket_thread():
                         rx_message = cybot.readline()      # Wait for a message, readline expects message to end with "\n"
                         print("Got a message from server: " + rx_message.decode() + "\n") # Convert message from bytes to String (i.e., decode)
 
-                if (send_message == "T\n") or (send_message == "t\n"):
 
-                        print("Requested turn from cybot. Waiting for reply")
-                        rx_message = cybot.readline()
-                        print(rx_message.decode + "\n")
-                        angle_entry  = tk.Entry(window,textvariable = ) 
                 # Choose either: 1) Idle wait, or 2) Request a periodic status update from the Cybot
                 # 1) Idle wait: for gui_send_message to be updated by the GUI
                 while gui_send_message == "wait\n": 
@@ -200,6 +180,7 @@ def socket_thread():
         cybot_socket.close()  # Close the socket (NOTE: comment out if using UART interface, only use for network socket option)
 
 ##### END Define Functions  #########
+
 
 ### Run main ###
 main()

@@ -25,6 +25,7 @@ volatile char command_byte_BACKWARD = 's';
 volatile char command_byte_LEFT = 'a';
 volatile char command_byte_RIGHT = 'd';
 volatile char command_byte_HALT = ' ';
+volatile char command_byte_ESCAPE = '\e'; //added by Chris 4/22
 volatile int command_flag = 0; // flag to tell the main program a special command was received
 
 void uart_interrupt_init(void){
@@ -185,6 +186,9 @@ void UART1_Handler(void)
             }
             if (byte_received == command_byte_HALT){
                 command_flag = 10;
+            }
+            if (byte_received == command_byte_ESCAPE){
+                command_flag = 11;
             }
 
         }
