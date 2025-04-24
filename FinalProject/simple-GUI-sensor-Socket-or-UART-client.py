@@ -40,6 +40,10 @@ def main():
         scan_command_Button = tk.Button(text ="Press to Scan", command = send_scan)
         scan_command_Button.pack() # Pack the button into the window for display
 
+        # Cybot Move command Button
+        scan_command_Button = tk.Button(text ="Press to Scan", command = send_move)
+        scan_command_Button.pack() # Pack the button into the window for display
+
         window.bind("<KeyPress>", key_press)
         window.bind("<KeyRelease>", key_release)
 
@@ -69,6 +73,13 @@ def send_scan():
         global gui_send_message # Command that the GUI has requested sent to the Cybot
         
         gui_send_message = "M\n"   # Update the message for the Client to send
+
+def send_move():
+        global gui_send_message # Command that the GUI has requested sent to the Cybot
+        
+        gui_send_message = "8\n"   # Update the message for the Client to send
+        movement_window = tk.Toplevel(window)
+        
 
 def key_press(event):
         global gui_send_message
@@ -158,17 +169,17 @@ def socket_thread():
 
                 # Choose either: 1) Idle wait, or 2) Request a periodic status update from the Cybot
                 # 1) Idle wait: for gui_send_message to be updated by the GUI
-                while gui_send_message == "wait\n": 
-                        time.sleep(.1)  # Sleep for .1 seconds
-                send_message = gui_send_message
+                # while gui_send_message == "wait\n": 
+                #         time.sleep(.1)  # Sleep for .1 seconds
+                # send_message = gui_send_message
 
                 # 2) Request a periodic Status update from the Cybot:
                 # every .1 seconds if GUI has not requested to send a new command
-                #time.sleep(.1)
-                #if(gui_send_message == "wait\n"):   # GUI has not requested a new command
-                #        send_message = "status\n"   # Request a status update from the Cybot
-                #else:
-                #        send_message = gui_send_message  # GUI has requested a new command
+                time.sleep(.1)
+                if(gui_send_message == "wait\n"):   # GUI has not requested a new command
+                       send_message = "status\n"   # Request a status update from the Cybot
+                else:
+                       send_message = gui_send_message  # GUI has requested a new command
 
                 gui_send_message = "wait\n"  # Reset gui command message request to wait                        
 
